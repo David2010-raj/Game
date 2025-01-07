@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic Tac Toe </title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+     background: linear-gradient(to top right, #ff0a6c 0%, #2d27ff 100%);
+      font-family: Arial, sans-serif;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 32px;
+      text-shadow: 1px 1px 5px black;
+    }
+
+    .game-container {
+      width: 320px;
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-gap: 10px;
+      box-shadow: 0 0 17px white;
+      border-radius: 15px;
+      padding: 10px;
+      backdrop-filter: blur(50px);
+      background-color: radial-gradient(circle, #0f0c29, #302b63, #24243e);
+      
+      
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #5581f1;
+      font-size: 24px;
+      font-weight: bold;
+      color: #fff;
+      box-shadow: 3px 3px 7px black;
+      text-shadow: 0 0 5px #fff;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
+    }
+
+    .cell:hover {
+      transform: scale(1.1);
+      box-shadow: inset 2px 2px 7px black;
+    }
+
+    .cell:active {
+      transform: scale(0.8);
+    }
+
+    @keyframes popup-show {
+      0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+    }
+
+    .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.5);
+      width: 150px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.4);
+      color: #fff;
+      font-size: 20px;
+      flex-direction: column;
+      text-align: center;
+      text-shadow: 2px 2px 4px black;
+      border-radius: 13px;
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+      opacity: 0;
+      animation: popup-show 0.5s ease forwards;
+    }
+
+    .popup button {
+      height: 40px;
+      width: 80px;
+      display: flex;
+      border: none;
+      border-radius: 7px;
+      justify-content: center;
+      align-items: center;
+      margin-top: 15px;
+      background-color: #637FFD;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+      box-shadow: 2px 2px 9px black;
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
+    }
+
+    .popup button:hover {
+      transform: scale(1.1);
+      font-size: 19px;
+    }
+
+    .footer {
+      height: 100px;
+      width: 200px;
+      margin-top: 50px;
+      text-align: center;
+      background: linear-gradient(#ff6a00, #ee0979);
+      line-height: 25px;
+      border-radius: 13px;
+      transform: translateY(20px);
+      transition: transform 0.3 linear;
+    }
+
+    .footer h2 {
+      font-size: 20px;
+      color: #ffffff;
+      text-shadow: 2px 2px 5px #24243e;
+      font-weight: 550;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tic Tac Toe</h1>
+  <div class="game-container" id="game-container"></div>
+
+  <div class="popup" id="popup" style="display: none;">
+    <div id="winner-message"></div>
+    <button id="reset-button">Reset</button>
+  </div>
+
+  <div class="footer">
+    <h2 id="First">DESIGN BY DAVID</h2>
+    <h2 id="Second">FUNCTION BY AI</h2>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const gameContainer = document.getElementById("game-container");
+      const popup = document.getElementById("popup");
+      const winnerMessage = document.getElementById("winner-message");
+      const resetButton = document.getElementById("reset-button");
+
+      let currentPlayer = "X";
+      let gameActive = true;
+      let gameState = ["", "", "", "", "", "", "", "", ""];
+
+      const winningCombinations = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6],
+      ];
+
+      function createBoard() {
+        gameContainer.innerHTML = "";
+        gameState.forEach((_, index) => {
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+          cell.dataset.index = index;
+          gameContainer.appendChild(cell);
+
+          cell.addEventListener("click", handleCellClick);
+        });
+      }
+      createBoard();
+
+      function handleCellClick(event) {
+        const cell = event.target;
+
+        if (
+          !cell.classList.contains("cell") ||
+          gameState[cell.dataset.index] ||
+          !gameActive
+        )
+          return;
+
+        const index = parseInt(cell.dataset.index, 10);
+
+        gameState[index] = currentPlayer;
+        cell.textContent = currentPlayer;
+        cell.classList.add("taken");
+
+        if (checkWin()) {
+          endGame(`${currentPlayer} wins!`);
+          return;
+        }
+
+        if (isDraw()) {
+          endGame("Draw!");
+          return;
+        }
+
+        currentPlayer = "O";
+        setTimeout(botMove, 200);
+      }
+
+      function botMove() {
+        const emptyCells = gameState
+          .map((value, index) => (value === "" ? index : null))
+          .filter((value) => value !== null);
+
+        if (!gameActive || emptyCells.length === 0) return;
+
+        const winningMove = findBestMove("O");
+        if (winningMove !== null) {
+          makeMove(winningMove, "O");
+          return;
+        }
+
+        const blockingMove = findBestMove("X");
+        if (blockingMove !== null) {
+          makeMove(blockingMove, "O");
+          return;
+        }
+
+        const randomIndex =
+          emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        makeMove(randomIndex, "O");
+      }
+
+      function findBestMove(player) {
+        for (const combination of winningCombinations) {
+          const [a, b, c] = combination;
+          const values = [gameState[a], gameState[b], gameState[c]];
+
+          if (
+            values.filter((value) => value === player).length === 2 &&
+            values.includes("")
+          ) {
+            return combination[values.indexOf("")];
+          }
+        }
+        return null;
+      }
+
+      function makeMove(index, player) {
+        gameState[index] = player;
+        const cell = document.querySelector(`[data-index="${index}"]`);
+        cell.textContent = player;
+        cell.classList.add("taken");
+
+        if (checkWin()) {
+          endGame(`${player} wins!`);
+          return;
+        }
+
+        if (isDraw()) {
+          endGame("Draw!");
+          return;
+        }
+
+        currentPlayer = "X";
+      }
+
+      function checkWin() {
+        return winningCombinations.some((combination) =>
+          combination.every((index) => gameState[index] === currentPlayer)
+        );
+      }
+
+      function isDraw() {
+        return gameState.every((cell) => cell !== "");
+      }
+
+      function endGame(message) {
+        gameActive = false;
+        winnerMessage.textContent = message;
+
+        popup.style.opacity = 0;
+        popup.style.display = "flex";
+        popup.style.animation = "popup-show 0.5s ease forwards";
+      }
+
+      resetButton.addEventListener("click", () => {
+        currentPlayer = "X";
+        gameActive = true;
+        gameState = ["", "", "", "", "", "", "", "", ""];
+        popup.style.display = "none";
+        createBoard();
+      });
+    });
+  </script>
+</body>
+</html>
